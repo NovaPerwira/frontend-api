@@ -5,8 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import SearchSidebar from './SearchBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { categoryData } from '../data/categoryData';
-import { categoryCollections } from '../data/categories';
+import { useCategories } from '../hooks/useCategories';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,10 +18,11 @@ const Navbar: React.FC = () => {
   
   const { user, logout } = useAuth();
   const { itemCount } = useCart();
+  const { categories } = useCategories();
 
-  const handleMouseEnter = (category: string) => {
+  const handleMouseEnter = (categorySlug: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setHoveredCategory(category);
+    setHoveredCategory(categorySlug);
     setShouldRenderDropdown(true);
     setIsOpen(true);
   };
@@ -35,15 +35,15 @@ const Navbar: React.FC = () => {
     }, 200);
   };
 
-  const categories = Object.entries(categoryData);
-  const leftCategories = categories.slice(0, 2);
-  const rightCategories = categories.slice(2);
-
   const handleLogout = () => {
     logout();
     setShowUserMenu(false);
     navigate('/');
   };
+
+  // Split categories for left and right positioning
+  const leftCategories = categories.slice(0, Math.ceil(categories.length / 2));
+  const rightCategories = categories.slice(Math.ceil(categories.length / 2));
 
   return (
     <>
@@ -59,136 +59,62 @@ const Navbar: React.FC = () => {
             <div className="flex">
               {/* Left Categories */}
               <div className="hidden md:flex items-center space-x-8">
-                {leftCategories.map(([category, data]) => {
-                  const IconComponent = data.icon;
-                  const collections = categoryCollections[category as keyof typeof categoryCollections];
-                  return (
-                    <div
-                      key={category}
-                      className="relative group"
-                      onMouseEnter={() => handleMouseEnter(category)}
-                      onMouseLeave={handleMouseLeave}
+                {leftCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="relative group"
+                    onMouseEnter={() => handleMouseEnter(category.slug)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <Link
+                      to={`/category/${category.slug}`}
+                      className="flex items-center space-x-1 text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                     >
-                      <Link
-                        to={`/category/${category.toLowerCase()}`}
-                        className="flex items-center space-x-1 text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                      <div className="relative flex group overflow-hidden cursor-pointer px-6 py-3">
+                        <span className="relative z-10 text-black group-hover:text-white ease-in-out transition-transform duration-500">
+                          {category.title}
+                        </span>
+                        <div className="absolute inset-0 z-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500 ease-[cubic-bezier(0.215,0.61,0.355,1)]"></div>
+                      </div>
+                    </Link>
+
+                    {/* Dropdown */}
+                    {shouldRenderDropdown && hoveredCategory === category.slug && (
+                      <div
+                        className={`fixed top-16 left-0 right-0 bg-white shadow-2xl border-b border-gray-200 z-50 overflow-hidden transition-all duration-300 ease-in-out ${
+                          isOpen ? 'animate-dropdownOpen' : 'animate-dropdownClose'
+                        }`}
                       >
-                        <div className="relative flex group overflow-hidden cursor-pointer px-6 py-3">
-                          <IconComponent
-                            size={16}
-                            className="relative z-10 text-black transition-colors duration-500 ease-in-out group-hover:text-white"
-                          />
-                          <span className="relative z-10 text-black group-hover:text-white ease-in-out transition-transform duration-500">
-                            {category}
-                          </span>
-                          <div className="absolute inset-0 z-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500 ease-[cubic-bezier(0.215,0.61,0.355,1)]"></div>
-                        </div>
-                      </Link>
-
-                      {/* Dropdown */}
-                      {shouldRenderDropdown && hoveredCategory === category && (
-                        <div
-                          className={`fixed top-16 left-0 right-0 bg-white shadow-2xl border-b border-gray-200 z-50 overflow-hidden transition-all duration-300 ease-in-out ${
-                            isOpen ? 'animate-dropdownOpen' : 'animate-dropdownClose'
-                          }`}
-                        >
-                          <div className="max-w-full mx-auto">
-                            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-100">
-                              <div className="max-w-7xl mx-auto flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="p-3 bg-purple-100 rounded-xl">
-                                    <IconComponent className="h-6 w-6 text-purple-600" />
-                                  </div>
-                                  <div>
-                                    <h3 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                                      {category}
-                                    </h3>
-                                    <p className="text-gray-600 text-sm lg:text-base">
-                                      Discover our exclusive NFT collection
-                                    </p>
-                                  </div>
+                        <div className="max-w-full mx-auto">
+                          <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-100">
+                            <div className="max-w-7xl mx-auto flex items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                <div className="p-3 bg-purple-100 rounded-xl">
+                                  <div className="h-6 w-6 bg-purple-600 rounded"></div>
                                 </div>
-                                <Link
-                                  to={`/category/${category.toLowerCase()}`}
-                                  className="group/btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base"
-                                >
-                                  <span>See All {category}</span>
-                                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
-                                </Link>
-                              </div>
-                            </div>
-
-                            <div className="px-4 sm:px-6 lg:px-8 py-8">
-                              <div className="max-w-7xl mx-auto">
-                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                                  <aside className="p-6 lg:p-8 bg-white rounded-2xl shadow-sm border border-purple-100">
-                                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Collections</h4>
-                                    <ul className="space-y-3">
-                                      {collections?.map((item, idx) => (
-                                        <li
-                                          key={idx}
-                                          className={`flex items-center gap-3 font-medium text-base transition-all cursor-pointer ${
-                                            item.active
-                                              ? 'text-purple-600 font-bold'
-                                              : 'text-gray-400 hover:text-gray-600'
-                                          }`}
-                                        >
-                                          <span className="text-xl">{item.icon}</span>
-                                          {item.name}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </aside>
-
-                                  <div className="lg:col-span-3">
-                                    <div className="flex space-x-4 lg:space-x-6">
-                                      {data.bestItems.map((item, index) => (
-                                        <div
-                                          key={index}
-                                          className="group/item flex-1 cursor-pointer"
-                                        >
-                                          <div className="bg-white rounded-2xl border border-purple-100 hover:border-purple-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
-                                            <div className="aspect-square overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
-                                              <img
-                                                src={item.image}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500"
-                                              />
-                                            </div>
-
-                                            <div className="p-4 lg:p-6">
-                                              <h4 className="font-semibold text-gray-900 mb-2 group-hover/item:text-purple-600 transition-colors duration-200 text-sm lg:text-base">
-                                                {item.name}
-                                              </h4>
-                                              <div className="flex items-center space-x-2 mb-3">
-                                                <p className="text-purple-600 font-bold text-sm lg:text-base">
-                                                  {item.price}
-                                                </p>
-                                                <p className="text-gray-400 line-through text-xs lg:text-sm">
-                                                  {item.originalPrice}
-                                                </p>
-                                              </div>
-
-                                              <div className="opacity-0 group-hover/item:opacity-100 transform translate-y-2 group-hover/item:translate-y-0 transition-all duration-300">
-                                                <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-4 rounded-lg text-xs lg:text-sm font-medium transition-colors duration-200">
-                                                  Buy Now
-                                                </button>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
+                                <div>
+                                  <h3 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                                    {category.title}
+                                  </h3>
+                                  <p className="text-gray-600 text-sm lg:text-base">
+                                    {category.description || 'Discover our exclusive NFT collection'}
+                                  </p>
                                 </div>
                               </div>
+                              <Link
+                                to={`/category/${category.slug}`}
+                                className="group/btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base"
+                              >
+                                <span>See All {category.title}</span>
+                                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                              </Link>
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
 
               {/* Centered Logo */}
@@ -209,123 +135,58 @@ const Navbar: React.FC = () => {
 
               {/* Right Categories */}
               <div className="hidden md:flex items-center space-x-8">
-                {rightCategories.map(([category, data]) => {
-                  const IconComponent = data.icon;
-                  const collections = categoryCollections[category as keyof typeof categoryCollections];
-                  return (
-                    <div
-                      key={category}
-                      className="relative group"
-                      onMouseEnter={() => handleMouseEnter(category)}
-                      onMouseLeave={handleMouseLeave}
+                {rightCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="relative group"
+                    onMouseEnter={() => handleMouseEnter(category.slug)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <Link
+                      to={`/category/${category.slug}`}
+                      className="flex items-center space-x-1 text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                     >
-                      <Link
-                        to={`/category/${category.toLowerCase()}`}
-                        className="flex items-center space-x-1 text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                      <div className="relative flex group overflow-hidden cursor-pointer px-6 py-3">
+                        <span className="relative z-10 text-black group-hover:text-white ease-in-out transition-transform duration-500">
+                          {category.title}
+                        </span>
+                        <div className="absolute inset-0 z-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500 ease-[cubic-bezier(0.215,0.61,0.355,1)]"></div>
+                      </div>
+                    </Link>
+
+                    {/* Dropdown */}
+                    {shouldRenderDropdown && hoveredCategory === category.slug && (
+                      <div
+                        className={`fixed top-16 left-0 right-0 bg-white shadow-2xl border-b border-gray-200 z-50 overflow-hidden transition-all duration-300 ease-in-out ${
+                          isOpen ? 'animate-dropdownOpen' : 'animate-dropdownClose'
+                        }`}
                       >
-                        <div className="relative flex group overflow-hidden cursor-pointer px-6 py-3">
-                          <IconComponent size={16} className='relative z-10 text-black transition-colors duration-500 ease-in-out group-hover:text-white' />
-                          <span className="relative z-10 text-black group-hover:text-white ease-in-out transition-transform duration-500">
-                            {category}
-                          </span>
-                          <div className="absolute inset-0 z-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-500 ease-[cubic-bezier(0.215,0.61,0.355,1)]"></div>
-                        </div>
-                      </Link>
-
-                      {/* Dropdown */}
-                      {shouldRenderDropdown && hoveredCategory === category && (
-                        <div
-                          className={`fixed top-16 left-0 right-0 bg-white shadow-2xl border-b border-gray-200 z-50 overflow-hidden transition-all duration-300 ease-in-out ${
-                            isOpen ? 'animate-dropdownOpen' : 'animate-dropdownClose'
-                          }`}
-                        >
-                          <div className="max-w-full mx-auto">
-                            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-100">
-                              <div className="max-w-7xl mx-auto flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="p-3 bg-purple-100 rounded-xl">
-                                    <IconComponent className="h-6 w-6 text-purple-600" />
-                                  </div>
-                                  <div>
-                                    <h3 className="text-2xl lg:text-3xl font-bold text-gray-900">{category}</h3>
-                                    <p className="text-gray-600 text-sm lg:text-base">Discover our exclusive NFT collection</p>
-                                  </div>
+                        <div className="max-w-full mx-auto">
+                          <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-100">
+                            <div className="max-w-7xl mx-auto flex items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                <div className="p-3 bg-purple-100 rounded-xl">
+                                  <div className="h-6 w-6 bg-purple-600 rounded"></div>
                                 </div>
-                                <Link
-                                  to={`/category/${category.toLowerCase()}`}
-                                  className="group/btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base"
-                                >
-                                  <span>See All {category}</span>
-                                  <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
-                                </Link>
-                              </div>
-                            </div>
-
-                            <div className="px-4 sm:px-6 lg:px-8 py-8">
-                              <div className="max-w-7xl mx-auto">
-                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                                  <aside className="p-6 lg:p-8 bg-white rounded-2xl shadow-sm border border-purple-100">
-                                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Collections</h4>
-                                    <ul className="space-y-3">
-                                      {collections?.map((item, idx) => (
-                                        <li key={idx} className={`flex items-center gap-3 font-medium text-base transition-all cursor-pointer
-                                          ${item.active ? "text-purple-600 font-bold" : "text-gray-400 hover:text-gray-600"}`}>
-                                          <span className="text-xl">{item.icon}</span>
-                                          {item.name}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </aside>
-
-                                  <div className="lg:col-span-3">
-                                    <div className="flex space-x-4 lg:space-x-6">
-                                      {data.bestItems.map((item, index) => (
-                                        <div
-                                          key={index}
-                                          className="group/item flex-1 cursor-pointer"
-                                        >
-                                          <div className="bg-white rounded-2xl border border-purple-100 hover:border-purple-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
-                                            <div className="aspect-square overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
-                                              <img
-                                                src={item.image}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500"
-                                              />
-                                            </div>
-                                            
-                                            <div className="p-4 lg:p-6">
-                                              <h4 className="font-semibold text-gray-900 mb-2 group-hover/item:text-purple-600 transition-colors duration-200 text-sm lg:text-base">
-                                                {item.name}
-                                              </h4>
-                                              <div className="flex items-center space-x-2 mb-3">
-                                                <p className="text-purple-600 font-bold text-sm lg:text-base">
-                                                  {item.price}
-                                                </p>
-                                                <p className="text-gray-400 line-through text-xs lg:text-sm">
-                                                  {item.originalPrice}
-                                                </p>
-                                              </div>
-                                              
-                                              <div className="opacity-0 group-hover/item:opacity-100 transform translate-y-2 group-hover/item:translate-y-0 transition-all duration-300">
-                                                <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-4 rounded-lg text-xs lg:text-sm font-medium transition-colors duration-200">
-                                                  Buy Now
-                                                </button>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
+                                <div>
+                                  <h3 className="text-2xl lg:text-3xl font-bold text-gray-900">{category.title}</h3>
+                                  <p className="text-gray-600 text-sm lg:text-base">{category.description || 'Discover our exclusive NFT collection'}</p>
                                 </div>
                               </div>
+                              <Link
+                                to={`/category/${category.slug}`}
+                                className="group/btn bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base"
+                              >
+                                <span>See All {category.title}</span>
+                                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                              </Link>
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -422,20 +283,16 @@ const Navbar: React.FC = () => {
           {isMenuOpen && (
             <div className="md:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
-                {Object.entries(categoryData).map(([category, data]) => {
-                  const IconComponent = data.icon;
-                  return (
-                    <Link
-                      key={category}
-                      to={`/category/${category.toLowerCase()}`}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <IconComponent size={20} />
-                      <span>{category}</span>
-                    </Link>
-                  );
-                })}
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    to={`/category/${category.slug}`}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-purple-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span>{category.title}</span>
+                  </Link>
+                ))}
                 
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   {user ? (

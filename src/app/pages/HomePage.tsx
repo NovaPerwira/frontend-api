@@ -1,71 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Zap, Shield, Truck } from 'lucide-react';
+import { useCategories } from '../hooks/useCategories';
+import { useNFTs } from '../hooks/useNFTs';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 const HomePage: React.FC = () => {
-  const featuredNFTs = [
-    {
-      id: 1,
-      name: 'Cyber Punk Jacket',
-      price: 2.5,
-      originalPrice: 3.2,
-      image: 'https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=400',
-      category: 'wearables',
-      rating: 4.8,
-      creator: 'CyberArt'
-    },
-    {
-      id: 2,
-      name: 'Quantum Phone NFT',
-      price: 15.8,
-      originalPrice: 18.9,
-      image: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=400',
-      category: 'electronics',
-      rating: 4.9,
-      creator: 'QuantumTech'
-    },
-    {
-      id: 3,
-      name: 'Ethereum Ring',
-      price: 8.5,
-      originalPrice: 10.2,
-      image: 'https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=400',
-      category: 'accessories',
-      rating: 4.8,
-      creator: 'CryptoJewels'
-    },
-    {
-      id: 4,
-      name: 'Golden Crown NFT',
-      price: 5.8,
-      originalPrice: 7.2,
-      image: 'https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=400',
-      category: 'wearables',
-      rating: 4.9,
-      creator: 'RoyalNFT'
-    }
-  ];
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
+  const { nfts, loading: nftsLoading, error: nftsError } = useNFTs();
 
-  const categories = [
-    {
-      name: 'Wearables',
-      slug: 'wearables',
-      image: 'https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=600',
-      description: 'Digital fashion and avatar accessories for the metaverse'
-    },
-    {
-      name: 'Electronics',
-      slug: 'electronics',
-      image: 'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=600',
-      description: 'Revolutionary digital gadgets and virtual devices'
-    },
-    {
-      name: 'Accessories',
-      slug: 'accessories',
-      image: 'https://images.pexels.com/photos/6069112/pexels-photo-6069112.jpeg?auto=compress&cs=tinysrgb&w=600',
-      description: 'Premium digital accessories and luxury items'
-    }
-  ];
+  // Get featured NFTs (first 4)
+  const featuredNFTs = nfts.slice(0, 4);
 
   return (
     <div className="min-h-screen">
@@ -84,7 +30,7 @@ const HomePage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                to="/category/wearables"
+                to={categories.length > 0 ? `/category/${categories[0].slug}` : '/'}
                 className="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center space-x-2"
               >
                 <span>Explore NFTs</span>
@@ -138,31 +84,40 @@ const HomePage: React.FC = () => {
               Discover unique digital assets across different categories
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category) => (
-              <Link
-                key={category.slug}
-                to={`/category/${category.slug}`}
-                className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-purple-100"
-              >
-                <div className="aspect-square overflow-hidden">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors duration-200">
-                    {category.name}
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {category.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          
+          {categoriesLoading ? (
+            <div className="flex justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : categoriesError ? (
+            <ErrorMessage message={categoriesError} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  to={`/category/${category.slug}`}
+                  className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-purple-100"
+                >
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={category.thumbnail || 'https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=600'}
+                      alt={category.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors duration-200">
+                      {category.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      {category.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -178,65 +133,71 @@ const HomePage: React.FC = () => {
                 Hand-picked exclusive digital assets from top creators
               </p>
             </div>
-            <Link
-              to="/category/wearables"
-              className="hidden md:flex items-center space-x-2 text-purple-600 hover:text-purple-700 font-semibold"
-            >
-              <span>View All</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredNFTs.map((nft) => (
-              <div
-                key={nft.id}
-                className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-purple-100"
+            {categories.length > 0 && (
+              <Link
+                to={`/category/${categories[0].slug}`}
+                className="hidden md:flex items-center space-x-2 text-purple-600 hover:text-purple-700 font-semibold"
               >
-                <div className="aspect-square overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
-                  <img
-                    src={nft.image}
-                    alt={nft.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-purple-600 transition-colors duration-200">
-                    {nft.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">by {nft.creator}</p>
-                  <div className="flex items-center mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < Math.floor(nft.rating)
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-600">({nft.rating})</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xl font-bold text-purple-600">{nft.price} ETH</span>
-                      {nft.originalPrice > nft.price && (
-                        <span className="text-sm text-gray-500 line-through">{nft.originalPrice} ETH</span>
-                      )}
-                    </div>
-                  </div>
-                  <Link
-                    to={`/category/${nft.category}`}
-                    className="mt-4 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 block text-center"
-                  >
-                    View NFT
-                  </Link>
-                </div>
-              </div>
-            ))}
+                <span>View All</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
+          
+          {nftsLoading ? (
+            <div className="flex justify-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : nftsError ? (
+            <ErrorMessage message={nftsError} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredNFTs.map((nft) => (
+                <div
+                  key={nft.id}
+                  className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-purple-100"
+                >
+                  <div className="aspect-square overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
+                    <img
+                      src={nft.image || 'https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                      alt={nft.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-purple-600 transition-colors duration-200">
+                      {nft.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">NFT #{nft.id}</p>
+                    <div className="flex items-center mb-3">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${
+                              i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="ml-2 text-sm text-gray-600">(4.8)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl font-bold text-purple-600">{nft.price} ETH</span>
+                      </div>
+                    </div>
+                    <Link
+                      to={`/nft/${nft.id}`}
+                      className="mt-4 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200 block text-center"
+                    >
+                      View NFT
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
